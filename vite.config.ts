@@ -49,6 +49,9 @@ export default defineConfig(({ mode }) => {
       serveShared(),
     ],
     server: {
+      watch: {
+        ignored: ['**/build/**'],
+      },
       fs: {
         deny: [
           '.env',
