@@ -1,3 +1,4 @@
+import { conversation } from '../../server/chat/testing/conversation'
 import { createRequire } from 'node:module'
 import { randomUUID } from 'node:crypto'
 import { createServer, type Server } from 'node:http'
@@ -147,7 +148,9 @@ it('reads the current page from request headers', async () => {
   )
   expect(result).toEqual({ pageUrl })
   expect(
-    (await chatStorage.read(token.split('.')[0])).map(({ role }) => role),
+    conversation(await chatStorage.read(token.split('.')[0])).map(
+      ({ role }) => role,
+    ),
   ).toEqual(['user', 'assistant'])
 })
 
@@ -170,7 +173,9 @@ it('updates the current page while retaining the previous page in dialogue histo
     ),
   ).toEqual({ pageUrl, previousPageUrl })
   expect(
-    (await chatStorage.read(token.split('.')[0])).map(({ role }) => role),
+    conversation(await chatStorage.read(token.split('.')[0])).map(
+      ({ role }) => role,
+    ),
   ).toEqual(['user', 'assistant', 'user', 'assistant'])
 })
 
@@ -179,12 +184,14 @@ it('looks up the current page through GraphQL and persists tool calls and result
   expect(
     await send(
       token,
-      'Tell me about the item on this page. Use graphql_request to query agentTestPage(uri: String!) with the pathname of the current page. Return only a JSON object with id and title from the API, or null values if unavailable. During tool calls provide reasoning only in the tool argument, with no surrounding text.',
+      'Tell me about the item on this page. Use graphql_request to query agentTestPage(uri: String!) with the pathname of the current page, selecting its id and title fields. Return the unmodified JSON response from this API query. During tool calls provide reasoning only in the tool argument, with no surrounding text.',
       `https://example.test${fixture.uri}`,
     ),
-  ).toEqual({ id: fixture.id, title: fixture.title })
+  ).toEqual({
+    data: { agentTestPage: { id: fixture.id, title: fixture.title } },
+  })
   expect(lookups).toContain(fixture.uri)
-  const history = await chatStorage.read(token.split('.')[0])
+  const history = conversation(await chatStorage.read(token.split('.')[0]))
   expect(history.filter(({ role }) => role === 'user')).toHaveLength(1)
   expect(history.filter(({ role }) => role === 'assistant')).toHaveLength(1)
   const calls = history.filter(({ role }) => role === 'tool_call')

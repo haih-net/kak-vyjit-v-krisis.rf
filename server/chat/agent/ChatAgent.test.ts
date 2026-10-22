@@ -1,3 +1,4 @@
+import { conversation } from '../testing/conversation'
 import { expect, it, vi } from 'vitest'
 import { ChatAgent } from './ChatAgent'
 import {
@@ -106,15 +107,21 @@ it('runs without HTTP and shares context and custom storage with nested tools', 
       }
     },
   })
-  expect(result.content).toBe('Done')
-  expect(events).toEqual(['Done'])
+  expect(result.content).toBe('{"value":"shared"}')
+  expect(runContext.client.complete).toHaveBeenCalledTimes(1)
+  expect(events).toEqual(['{"value":"shared"}'])
   expect(seen).toHaveLength(3)
-  expect(seen.every((item) => item === seen[0])).toBe(true)
+  expect(
+    seen.every(
+      (item) =>
+        item.storage === seen[0].storage && item.signal === seen[0].signal,
+    ),
+  ).toBe(true)
   expect(seen[0].storage).toBe(storage)
   expect(storage.values.get('nested')).toBe('saved')
-  expect((await storage.read('same-dialogue')).map(({ role }) => role)).toEqual(
-    ['user', 'tool_call', 'tool', 'assistant'],
-  )
+  expect(
+    conversation(await storage.read('same-dialogue')).map(({ role }) => role),
+  ).toEqual(['user', 'tool_call', 'tool', 'assistant'])
 })
 
 it('isolates concurrent runs using different storage instances', async () => {
@@ -157,7 +164,7 @@ it('propagates cancellation, records failure and releases the dialogue', async (
   await ready
   controller.abort(new Error('Stopped'))
   await assertion
-  const messages = await runContext.storage.read('same-dialogue')
+  const messages = conversation(await runContext.storage.read('same-dialogue'))
   expect(messages.at(-1)?.success).toBe(false)
   expect(JSON.parse(messages.at(-1)?.content ?? '{}').abortReason).toBe(
     'disconnect',
@@ -168,7 +175,7 @@ it('propagates cancellation, records failure and releases the dialogue', async (
   ).resolves.toMatchObject({ success: true })
 })
 
-it('returns a missing GraphQL endpoint error to the model and continues', async () => {
+it('returns a missing GraphQL endpoint error without calling the model again', async () => {
   const runContext = context(new MemoryStorage())
   runContext.client.complete = vi
     .fn()
@@ -212,8 +219,11 @@ it('returns a missing GraphQL endpoint error to the model and continues', async 
       stream: false,
     },
   )
-  expect(result.content).toBe('The site API is unavailable.')
-  const messages = await runContext.storage.read('same-dialogue')
+  expect(JSON.parse(result.content)).toEqual({
+    error: 'GraphQL endpoint is not configured',
+  })
+  expect(runContext.client.complete).toHaveBeenCalledTimes(1)
+  const messages = conversation(await runContext.storage.read('same-dialogue'))
   expect(messages.find(({ role }) => role === 'tool')?.success).toBe(false)
   expect(messages.at(-1)?.success).toBe(true)
 })
@@ -245,5 +255,7 @@ it('derives the dialogue from the verified token, ignoring caller-supplied IDs',
   })
   expect(verify).toHaveBeenCalledExactlyOnceWith('Bearer test-token')
   expect(await runContext.storage.read('another-dialogue')).toEqual([])
-  expect(await runContext.storage.read('same-dialogue')).toHaveLength(2)
+  expect(
+    conversation(await runContext.storage.read('same-dialogue')),
+  ).toHaveLength(2)
 })

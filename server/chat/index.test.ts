@@ -1,3 +1,4 @@
+import { conversation } from './testing/conversation'
 import { errorReporter } from '../errorLogging'
 import { createRequire } from 'node:module'
 import { schema } from '../schema'
@@ -104,7 +105,7 @@ it('передаёт историю и настройки, доставляет 
   finish()
   expect((await stream.next()).value).toBe(' второй')
   expect((await stream.next()).done).toBe(true)
-  const saved = await storage.read(token.split('.')[0])
+  const saved = conversation(await storage.read(token.split('.')[0]))
   expect(saved[2]).toMatchObject({
     id: expect.any(String),
     createdAt: expect.any(String),
@@ -203,7 +204,7 @@ it.each([true, false])(
         (await storage.listMessages()).map(({ status }) => status),
       )
       .toEqual(['success', 'error'])
-    const saved = await storage.read(token.split('.')[0])
+    const saved = conversation(await storage.read(token.split('.')[0]))
     expect(JSON.parse(saved[1].content).abortReason).toBe('disconnect')
   },
 )
@@ -281,7 +282,9 @@ it.each([true, false])(
       { role: 'user', content: 'Второй' },
     ])
     expect(
-      await new ChatStorage(storage.database).read(token.split('.')[0]),
+      conversation(
+        await new ChatStorage(storage.database).read(token.split('.')[0]),
+      ),
     ).toHaveLength(4)
     await post(await storage.issue(), 'Другой чат')
     expect(received[2]).toEqual([
@@ -305,7 +308,7 @@ it('сохраняет входящее сообщение и индекс пр�
     body: JSON.stringify({ message: 'Вопрос, с запятой\nи переносом' }),
   })
   expect(response.status).toBe(502)
-  const messages = await storage.read(token.split('.')[0])
+  const messages = conversation(await storage.read(token.split('.')[0]))
   expect(messages).toHaveLength(2)
   expect(messages[0]).toMatchObject({
     role: 'user',
@@ -357,7 +360,7 @@ it.each(['development', 'production'])(
         success: false,
         id: expect.any(String),
       })
-      const saved = await storage.read(token.split('.')[0])
+      const saved = conversation(await storage.read(token.split('.')[0]))
       expect(saved[1].success).toBe(false)
       expect(JSON.parse(saved[1].content)).toMatchObject({
         providerStatus: 402,
@@ -456,7 +459,7 @@ it.each(['ChatDialogue', 'ChatMessage'])(
     })
     expect(response.status).toBe(200)
     expect(await response.text()).toContain('[DONE]')
-    expect(await storage.read(chatId)).toMatchObject([
+    expect(conversation(await storage.read(chatId))).toMatchObject([
       { role: 'user', content: 'Продолжим' },
       { role: 'assistant', content: 'Ответ' },
     ])
@@ -479,7 +482,7 @@ it('одновременное восстановление не перезап�
     content: 'Сохранить',
   })
   await Promise.all(Array.from({ length: 8 }, () => storage.read(chatId)))
-  expect(await storage.read(chatId)).toMatchObject([
+  expect(conversation(await storage.read(chatId))).toMatchObject([
     { id: 'preserved', content: 'Сохранить' },
   ])
 })
@@ -505,7 +508,8 @@ it.each([
         res.setHeader('Content-Type', 'text/event-stream')
       }
       if (requests++ === 0) {
-        expect(req.body.tools[0].function.name).toBe('graphql_request')
+        expect(req.body.tools).toBeUndefined()
+        expect(req.body.messages[0].content).toContain('graphql_request')
         const args = JSON.stringify({
           reasoning: 'Проверю доступные данные.',
           query: 'query Search($term: String!) { search(term: $term) }',
@@ -604,9 +608,11 @@ it.each([
     const output = await response.text()
     if (explanations === 'false') {
       expect(output).not.toContain('Проверю')
-    } else {
+    } else if (stream) {
       expect(output).toContain('Проверю')
-      expect(output.indexOf('Проверю')).toBeLessThan(output.indexOf('Ничего'))
+      if (stream) {
+        expect(output.indexOf('Проверю')).toBeLessThan(output.indexOf('search'))
+      }
     }
     expect(response.headers.get('content-type')).toContain(
       stream ? 'text/event-stream' : 'application/json',
@@ -614,11 +620,11 @@ it.each([
     if (stream) {
       expect(output).toContain(
         JSON.stringify({
-          id: (await storage.read(token.split('.')[0])).at(-1)?.id,
+          id: conversation(await storage.read(token.split('.')[0])).at(-1)?.id,
           usage: {
-            prompt_tokens: 300,
-            prompt_tokens_details: { cached_tokens: 120 },
-            completion_tokens: 30,
+            prompt_tokens: 100,
+            prompt_tokens_details: { cached_tokens: 40 },
+            completion_tokens: 10,
           },
           choices: [],
         }),
@@ -626,29 +632,27 @@ it.each([
       expect(output).toContain('[DONE]')
     } else {
       expect(JSON.parse(output)).toEqual({
-        id: 'final-answer',
+        id: 'tool-round',
         success: true,
-        content:
-          explanations === 'false'
-            ? 'Ничего не найдено.'
-            : '\n\nПроверю доступные данные.\n\nНичего не найдено.',
-        usage: { inputTokens: 300, cachedTokens: 120, outputTokens: 30 },
+        content: '{"data":{"search":[]}}',
+        usage: { inputTokens: 100, cachedTokens: 40, outputTokens: 10 },
       })
     }
+    expect(requests).toBe(1)
     expect(apiCalls).toBe(1)
     expect(
-      (await storage.read(token.split('.')[0])).find(
+      conversation(await storage.read(token.split('.')[0])).find(
         ({ role }) => role === 'tool_call',
       )?.content,
     ).toContain('Проверю доступные данные.')
     const expectedUsage = {
-      inputTokens: 300,
-      cachedTokens: 120,
-      outputTokens: 30,
+      inputTokens: 100,
+      cachedTokens: 40,
+      outputTokens: 10,
     }
-    expect((await storage.read(token.split('.')[0])).at(-1)?.usage).toEqual(
-      expectedUsage,
-    )
+    expect(
+      conversation(await storage.read(token.split('.')[0])).at(-1)?.usage,
+    ).toEqual(expectedUsage)
     expect((await storage.listMessages()).at(-1)?.usage).toEqual(expectedUsage)
     expect((await storage.listMessages()).at(-1)).toMatchObject({
       role: 'assistant',
@@ -656,7 +660,9 @@ it.each([
       usage: expectedUsage,
     })
     expect(
-      (await storage.read(token.split('.')[0])).map(({ role }) => role),
+      conversation(await storage.read(token.split('.')[0])).map(
+        ({ role }) => role,
+      ),
     ).toEqual(['user', 'tool_call', 'tool', 'assistant'])
     expect((await storage.listMessages()).map(({ role }) => role)).toEqual([
       'user',
@@ -681,7 +687,7 @@ it('logs the incoming message and a failed answer when configuration is missing'
   const response = await postMessage(base)
   const body = await response.json()
   expect(response.status).toBe(503)
-  const saved = await storage.read(token.split('.')[0])
+  const saved = conversation(await storage.read(token.split('.')[0]))
   expect(saved).toMatchObject([
     { role: 'user', success: true },
     { role: 'assistant', success: false, id: body.id, replyToId: saved[0].id },
@@ -716,7 +722,7 @@ it.each(['broken-stream', 'stream-error', 'connection-error', 'rate-limit'])(
     const response = await postMessage(base)
     const body = await response.text()
     expect(body).toContain('"success":false')
-    const saved = await storage.read(token.split('.')[0])
+    const saved = conversation(await storage.read(token.split('.')[0]))
     expect(saved).toHaveLength(2)
     expect(saved[1]).toMatchObject({
       role: 'assistant',
@@ -735,32 +741,43 @@ it.each(['broken-stream', 'stream-error', 'connection-error', 'rate-limit'])(
   },
 )
 
-it('logs a concurrent rejected message without overwriting the active conversation', async () => {
+it('успешно обрабатывает конкурентные сообщения, сохраняя связь ответов с запросами', async () => {
   const provider = express()
-  let finish!: () => void
+  const finish: (() => void)[] = []
   provider.post('/chat/completions', (_req, res) => {
+    const answer = `Answer ${finish.length + 1}`
     res.setHeader('Content-Type', 'text/event-stream')
-    res.write('data: {"choices":[{"delta":{"content":"Answer"}}]}\n\n')
-    finish = () => res.end('data: [DONE]\n\n')
+    res.write(
+      `data: ${JSON.stringify({ choices: [{ delta: { content: answer } }] })}\n\n`,
+    )
+    finish.push(() => res.end('data: [DONE]\n\n'))
   })
   vi.stubEnv('CHAT_API_BASE_URL', await listen(provider))
   const base = await configure()
   const first = await postMessage(base, 'First')
   const second = await postMessage(base, 'Second')
-  expect(second.status).toBe(409)
-  await second.text()
-  finish()
-  await first.text()
-  const saved = await storage.read(token.split('.')[0])
+  expect(first.status).toBe(200)
+  expect(second.status).toBe(200)
+  expect(finish).toHaveLength(2)
+  finish[1]()
+  expect(await second.text()).toContain('Answer 2')
+  finish[0]()
+  expect(await first.text()).toContain('Answer 1')
+  const saved = conversation(await storage.read(token.split('.')[0]))
   expect(saved).toHaveLength(4)
-  expect(
-    saved.filter(({ role }) => role === 'user').map(({ content }) => content),
-  ).toEqual(['First', 'Second'])
-  expect(
-    saved
-      .filter(({ role }) => role === 'assistant')
-      .map(({ success }) => success),
-  ).toEqual([false, true])
+  const users = saved.filter(({ role }) => role === 'user')
+  expect(users.map(({ content }) => content)).toEqual(['First', 'Second'])
+  const answers = saved.filter(({ role }) => role === 'assistant')
+  expect(answers).toHaveLength(2)
+  for (const [index, user] of users.entries()) {
+    expect(answers).toContainEqual(
+      expect.objectContaining({
+        success: true,
+        replyToId: user.id,
+        content: `Answer ${index + 1}`,
+      }),
+    )
+  }
   expect(await storage.listMessages()).toHaveLength(4)
 })
 
@@ -788,7 +805,7 @@ it('records timeout as an unsuccessful answer', async () => {
   try {
     const response = await postMessage(base)
     expect(await response.text()).toContain('"success":false')
-    const saved = await storage.read(token.split('.')[0])
+    const saved = conversation(await storage.read(token.split('.')[0]))
     expect(saved[1].success).toBe(false)
     expect(JSON.parse(saved[1].content).abortReason).toBe('timeout')
   } finally {
@@ -833,7 +850,9 @@ it('preserves the current page URL with the user message', async () => {
     body: JSON.stringify({ message: 'Help me find a product' }),
   })
   expect(await response.text()).toContain('[DONE]')
-  expect((await storage.read(token.split('.')[0]))[0].pageUrl).toBe(pageUrl)
+  expect(conversation(await storage.read(token.split('.')[0]))[0].pageUrl).toBe(
+    pageUrl,
+  )
 })
 
 it.each([true, false])(
@@ -856,7 +875,7 @@ it.each([true, false])(
     const base = await configure()
     await (await postMessage(base)).text()
     const expectedUsage = { inputTokens: 123, cachedTokens: 0, outputTokens: 7 }
-    const saved = await storage.read(token.split('.')[0])
+    const saved = conversation(await storage.read(token.split('.')[0]))
     expect(saved[1]).toMatchObject({ success: completed, usage: expectedUsage })
     expect((await storage.listMessages())[1].usage).toEqual(expectedUsage)
   },
@@ -873,7 +892,9 @@ it('не подменяет отсутствующие счётчики нуля
   vi.stubEnv('CHAT_API_BASE_URL', await listen(provider))
   const base = await configure()
   await (await postMessage(base)).text()
-  expect((await storage.read(token.split('.')[0]))[1].usage).toEqual({
+  expect(
+    conversation(await storage.read(token.split('.')[0]))[1].usage,
+  ).toEqual({
     inputTokens: 12,
     outputTokens: 3,
   })
@@ -902,7 +923,9 @@ it.each([true, false])(
     })
     expect(response.status).toBe(429)
     expect(await response.json()).toMatchObject({ success: false })
-    expect((await storage.read(token.split('.')[0]))[1].success).toBe(false)
+    expect(
+      conversation(await storage.read(token.split('.')[0]))[1].success,
+    ).toBe(false)
   },
 )
 
@@ -925,7 +948,7 @@ it.each(['{', '{"choices":[]}', '{"error":{"message":"Ошибка"}}'])(
     })
     expect(response.status).toBe(502)
     expect(await response.json()).toMatchObject({ success: false })
-    const saved = await storage.read(token.split('.')[0])
+    const saved = conversation(await storage.read(token.split('.')[0]))
     expect(saved[1].success).toBe(false)
     expect(JSON.parse(saved[1].content).responseBody).toBe(body)
   },
@@ -942,7 +965,7 @@ it('отклоняет неboolean режим до записи истории',
     body: JSON.stringify({ message: 'Вопрос', stream: 'false' }),
   })
   expect(response.status).toBe(400)
-  expect(await storage.read(token.split('.')[0])).toEqual([])
+  expect(conversation(await storage.read(token.split('.')[0]))).toEqual([])
 })
 
 it.each(['', '   ', 'invalid-token'])(

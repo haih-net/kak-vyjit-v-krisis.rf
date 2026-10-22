@@ -1,3 +1,4 @@
+import { callAgentTool } from './callAgent'
 import type { AgentStorage } from '../agent/context'
 import { graphqlRequestTool } from './graphqlRequest'
 import { webSearchTool } from './webSearch'
@@ -7,6 +8,7 @@ import { hasSkills } from '../skills/registry'
 import type { ChatTool, PreparedTool, ToolCall, ToolDefinition } from '../types'
 
 const tools: readonly ChatTool[] = [
+  callAgentTool,
   graphqlRequestTool,
   ...(hasSkills ? [readSkillTool] : []),
   webSearchTool,
@@ -17,6 +19,21 @@ export class ToolRegistry<S extends AgentStorage = AgentStorage> {
 
   constructor(private readonly entries: readonly ChatTool<S>[] = tools) {
     this.definitions = entries.map(({ definition }) => definition)
+  }
+
+  select(names: string[]): ToolRegistry<S> {
+    for (const name of names) {
+      if (
+        !this.entries.some((entry) => entry.definition.function.name === name)
+      ) {
+        throw new Error(`Unknown tool: ${name}`)
+      }
+    }
+    return new ToolRegistry(
+      this.entries.filter((entry) =>
+        names.includes(entry.definition.function.name),
+      ),
+    )
   }
 
   prepare(call: ToolCall): PreparedTool<S> {
@@ -39,7 +56,16 @@ export class ToolRegistry<S extends AgentStorage = AgentStorage> {
         `A non-empty reasoning is required before every tool call`,
       )
     }
-    return tool.prepare({ ...args, reasoning: args.reasoning })
+    const prepared = tool.prepare({ ...args, reasoning: args.reasoning })
+    return {
+      reasoning: prepared.reasoning,
+      execute: (context) =>
+        context.execution
+          ? context.execution.run(call.function.name, args, () =>
+              prepared.execute(context),
+            )
+          : prepared.execute(context),
+    }
   }
 }
 

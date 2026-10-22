@@ -1,3 +1,4 @@
+import type { Execution } from './execution'
 import { LlmClient } from '../../llm/client'
 import type { Message, StoredMessage } from '../storage'
 import { buildSystemMessage } from '../systemMessage'
@@ -27,6 +28,12 @@ export interface AgentContext<S extends AgentStorage = AgentStorage> {
   signal: AbortSignal
   client: Pick<LlmClient, 'endpoint' | 'complete'>
   config: AgentConfig
+  execution?: Execution
+  callAgent?: (
+    message: string,
+    tools: string[] | undefined,
+    input?: unknown,
+  ) => Promise<string>
   tools: ToolRegistry<S>
   receive?(message: StoredMessage, context: AgentContext<S>): Promise<void>
 }

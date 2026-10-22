@@ -1,3 +1,4 @@
+import { DepthLimitError } from '../execution'
 import { randomUUID } from 'node:crypto'
 import { logDevError } from '../../../errorLogging'
 import type { AgentContext, AgentStorage } from '../context'
@@ -45,21 +46,33 @@ export async function executeTool<S extends AgentStorage>(
     result = await tool.execute(context)
   } catch (error) {
     logDevError('chat.tool', error, { chatId, toolCallId: call.id })
+    if (error instanceof DepthLimitError || context.signal.aborted) {
+      throw error
+    }
     result = JSON.stringify({
       error: error instanceof Error ? error.message : 'Tool failed',
     })
   }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(result)
+  } catch {
+    parsed = result
+  }
+  const failed =
+    !!parsed &&
+    typeof parsed === 'object' &&
+    (('error' in parsed && !!parsed.error) ||
+      ('errors' in parsed &&
+        Array.isArray(parsed.errors) &&
+        parsed.errors.length > 0))
   await storage.append(chatId, {
     id: randomUUID(),
     createdAt: new Date().toISOString(),
     role: 'tool',
-    success: !JSON.parse(result).error && !JSON.parse(result).errors?.length,
+    success: !failed,
     replyToId: message.id,
-    content: JSON.stringify(
-      { toolCallId: call.id, result: JSON.parse(result) as unknown },
-      null,
-      2,
-    ),
+    content: JSON.stringify({ toolCallId: call.id, result: parsed }, null, 2),
   })
   if (context.signal.aborted) {
     throw new Error('Request cancelled')
