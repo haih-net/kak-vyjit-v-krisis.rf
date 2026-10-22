@@ -1,4 +1,3 @@
-import { callAgentTool } from 'server/chat/tools/callAgent'
 import { createRequire } from 'node:module'
 import { randomUUID } from 'node:crypto'
 import { createServer, type Server } from 'node:http'
@@ -7,11 +6,12 @@ import { afterAll, beforeAll, expect } from 'vitest'
 import { db } from 'server/database'
 import { schema } from 'server/schema'
 import type { UserRecord } from 'server/schema/types/User/interfaces'
-import { ChatAgent } from 'server/chat/agent/ChatAgent'
-import { createAgentContext } from 'server/chat/agent/context'
+import { setupChat } from 'server/chat'
+import { createContext } from 'server/context'
+import { createToken } from 'server/schema/types/User/helpers/auth'
 import { chatStorage } from 'server/chat/storage'
-import { ToolRegistry } from 'server/chat/tools/registry'
-import { graphqlRequestTool } from 'server/chat/tools/graphqlRequest'
+import type { AgentResult } from 'server/chat/agent/types'
+import type { ProviderMessage } from 'server/chat/types'
 
 const { graphql } = createRequire(import.meta.url)(
   'graphql',
@@ -27,6 +27,15 @@ export const user: Pick<UserRecord, 'id' | 'username' | 'email' | 'fullname'> =
 let server: Server | undefined
 let endpoint: string
 let apiCalls = 0
+let authToken: string
+
+interface ExecutionRecord {
+  kind?: string
+  function: {
+    name: string
+    arguments: { messages?: ProviderMessage[] }
+  }
+}
 
 beforeAll(async () => {
   for (const name of ['CHAT_API_BASE_URL', 'CHAT_API_KEY', 'CHAT_MODEL']) {
@@ -35,24 +44,25 @@ beforeAll(async () => {
     }
   }
   expect(process.env.DATABASE_FILENAME).toBe(':memory:')
-  await db<UserRecord>('User').insert({ ...user, status: 'active' })
+  const [record] = await db<UserRecord>('User')
+    .insert({ ...user, status: 'active' })
+    .returning('*')
+  authToken = await createToken(record, db)
   const app: Express = express()
   // This isolated API represents the authenticated user's execution context.
   // It uses the production schema and database, not a replacement me resolver.
   app.post('/api', express.json(), async (req, res) => {
     apiCalls += 1
-    const currentUser = await db<UserRecord>('User')
-      .where('id', user.id)
-      .first()
     const result = await graphql({
       schema,
       source: req.body.query,
       variableValues: req.body.variables,
       operationName: req.body.operationName,
-      contextValue: { req, db, currentUser: currentUser ?? null },
+      contextValue: await createContext(req),
     })
     res.json(result)
   })
+  setupChat({ app, storage: chatStorage })
   const httpServer = createServer(app)
   server = httpServer
   await new Promise<void>((resolve) =>
@@ -74,60 +84,58 @@ afterAll(async () => {
   await db.destroy()
 })
 
-export async function send(message: string): Promise<{
+export async function send(
+  message: string,
+  authenticated = true,
+): Promise<{
   content: string
   modelCalls: number
   graphqlCalls: number
   toolResultsSentToModel: number
   agentCalls: unknown[]
 }> {
-  const token = await chatStorage.issue()
-  const context = createAgentContext({
-    storage: chatStorage,
-    endpoint,
-    tools: new ToolRegistry([graphqlRequestTool, callAgentTool]),
-    config: {
-      systemMessage: [
-        'You handle requests for an authenticated user.',
-        'The available GraphQL API executes in that user context.',
-        'To read their profile, query me { id username email fullname }.',
-        'The final profile result must be the exact JSON API response: {"data":{"me":{...}}}.',
-        'Never invent profile values or wrap JSON in Markdown.',
-        'You may delegate to the available function or answer directly when no API data is needed.',
-        'When delegating, put any explanation only in the reasoning argument.',
-      ].join('\n'),
-    },
-  })
-  const client = context.client
-  let modelCalls = 0
-  let toolResultsSentToModel = 0
-  // Observe real provider requests without replacing any response.
-  context.client = {
-    endpoint: client.endpoint,
-    complete: async (request, signal) => {
-      modelCalls += 1
-      toolResultsSentToModel += request.messages.filter(
-        ({ role }) => role === 'tool',
-      ).length
-      return client.complete(request, signal)
-    },
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(authenticated ? { Authorization: `Bearer ${authToken}` } : {}),
   }
-  const previousApiCalls = apiCalls
-  const result = await new ChatAgent().run(message, token, context, {
-    stream: false,
+  const issued = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ query: 'mutation { createChatToken(data: {}) }' }),
   })
+  const issuance = (await issued.json()) as {
+    errors?: unknown[]
+    data: { createChatToken: string }
+  }
+  expect(issuance.errors).toBeUndefined()
+  const token: string = issuance.data.createChatToken
+  const previousApiCalls = apiCalls
+  const response = await fetch(`${endpoint}/chat`, {
+    method: 'POST',
+    headers: { ...headers, 'dialog-token': token },
+    body: JSON.stringify({ message, stream: false }),
+  })
+  expect(response.status).toBe(200)
+  const result = (await response.json()) as AgentResult
   expect(result.success).toBe(true)
+  // Observe real provider requests without replacing any response.
+  const records = (await chatStorage.read(token.split('.')[0]))
+    .filter(({ role }) => role === 'tool_call')
+    .map(({ content }) => JSON.parse(content) as ExecutionRecord)
+    .filter((entry) => entry.kind === 'execution')
+  const modelCalls = records.filter((entry) => entry.function.name === 'llm')
   return {
     content: result.content,
-    modelCalls,
+    modelCalls: modelCalls.length,
     graphqlCalls: apiCalls - previousApiCalls,
-    toolResultsSentToModel,
-    agentCalls: (await chatStorage.read(token.split('.')[0]))
-      .filter(({ role }) => role === 'tool_call')
-      .map(({ content }) => JSON.parse(content))
-      .filter(
-        (entry) =>
-          entry.kind === 'execution' && entry.function.name === 'agent',
-      ),
+    toolResultsSentToModel: modelCalls.reduce(
+      (count, entry) =>
+        count +
+        (entry.function.arguments.messages?.filter(
+          (message) => message.role === 'tool',
+        ).length ?? 0),
+      0,
+    ),
+    agentCalls: records.filter((entry) => entry.function.name === 'agent'),
   }
 }

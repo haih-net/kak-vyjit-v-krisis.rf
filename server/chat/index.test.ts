@@ -85,7 +85,7 @@ it('передаёт историю и настройки, доставляет 
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      'dialog-token': token,
     },
     body: JSON.stringify({ message: 'Продолжи' }),
   })
@@ -138,7 +138,7 @@ it('отклоняет клиентскую системную инструкц�
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'dialog-token': token,
       },
       body: JSON.stringify(
         role === 'system'
@@ -177,7 +177,7 @@ it.each([true, false])(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'dialog-token': token,
       },
       body: JSON.stringify({ message: 'Вопрос', stream }),
       signal: controller.signal,
@@ -220,27 +220,38 @@ it('выдаёт токен и отклоняет отсутствующую и�
   expect(
     await new ChatStorage(storage.database).verify(`Bearer ${data.token}`),
   ).toBe(data.token.split('.')[0])
-  for (const authorization of [
-    '',
-    'Bearer',
-    'Bearer   ',
-    `Bearer ${data.token.slice(0, -1)}x`,
-  ]) {
+  for (const dialogToken of ['', '   ', `${data.token.slice(0, -1)}x`]) {
     const response = await fetch(`${base}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: authorization,
+        'dialog-token': dialogToken,
       },
       body: JSON.stringify({ message: 'Вопрос' }),
     })
     expect(response.status).toBe(401)
     expect(await response.json()).toEqual({
-      error: authorization.includes(data.token.slice(0, -1))
+      code: 'INVALID_DIALOG_TOKEN',
+      error: dialogToken.includes(data.token.slice(0, -1))
         ? 'Недействительный токен чата'
         : 'Не был получен токен',
     })
   }
+})
+
+it('does not label dialogue storage failures as invalid tokens', async () => {
+  const base = await configure()
+  vi.spyOn(storage, 'verify').mockRejectedValueOnce(
+    new Error('Storage unavailable'),
+  )
+  const response = await fetch(`${base}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'dialog-token': token },
+    body: JSON.stringify({ message: 'Hello' }),
+  })
+  expect(response.status).toBe(503)
+  expect(await response.json()).toEqual({ error: 'Storage unavailable' })
+  expect(await storage.read(token.split('.')[0])).toEqual([])
 })
 
 it.each([true, false])(
@@ -267,7 +278,7 @@ it.each([true, false])(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${access}`,
+          'dialog-token': access,
         },
         body: JSON.stringify({
           message,
@@ -308,7 +319,7 @@ it('сохраняет входящее сообщение и индекс пр�
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      'dialog-token': token,
     },
     body: JSON.stringify({ message: 'Вопрос, с запятой\nи переносом' }),
   })
@@ -356,7 +367,7 @@ it.each(['development', 'production'])(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'dialog-token': token,
         },
         body: JSON.stringify({ message: 'Вопрос' }),
       })
@@ -418,7 +429,7 @@ it('пишет исходную ошибку хранилища со стеко�
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'dialog-token': token,
       },
       body: JSON.stringify({ message: 'Вопрос' }),
     })
@@ -460,7 +471,7 @@ it.each(['ChatDialogue', 'ChatMessage'])(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'dialog-token': token,
       },
       body: JSON.stringify({ message: 'Продолжим' }),
     })
@@ -607,7 +618,7 @@ it.each([
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'dialog-token': token,
         Cookie: 'session=admin',
       },
       body: JSON.stringify({ message: 'Найди товар Example product', stream }),
@@ -683,7 +694,7 @@ const postMessage = (base: string, message = 'Test error'): Promise<Response> =>
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      'dialog-token': token,
     },
     body: JSON.stringify({ message }),
   })
@@ -851,7 +862,7 @@ it('preserves the current page URL with the user message', async () => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      'dialog-token': token,
       'X-Chat-Page-Url': pageUrl,
     },
     body: JSON.stringify({ message: 'Help me find a product' }),
@@ -924,7 +935,7 @@ it.each([true, false])(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'dialog-token': token,
       },
       body: JSON.stringify({ message: 'Вопрос', stream }),
     })
@@ -952,7 +963,7 @@ it.each(['{', '{"choices":[]}', '{"error":{"message":"Ошибка"}}'])(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'dialog-token': token,
       },
       body: JSON.stringify({ message: 'Вопрос', stream: false }),
     })
@@ -970,7 +981,7 @@ it('отклоняет неboolean режим до записи истории',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      'dialog-token': token,
     },
     body: JSON.stringify({ message: 'Вопрос', stream: 'false' }),
   })
@@ -1024,7 +1035,7 @@ it.each([true, false])(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'dialog-token': token,
         },
         body: JSON.stringify({ message, stream }),
       })

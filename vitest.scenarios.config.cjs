@@ -10,6 +10,7 @@ module.exports = async (configEnv) => {
     hookTimeout: 15000,
     env: {
       DATABASE_FILENAME: ':memory:',
+      JWT_SECRET: 'scenario-auth-test-secret',
       CHAT_EMAIL_NOTIFICATIONS_ENABLED: 'false',
       CHAT_TOOL_EXPLANATIONS_ENABLED: 'false',
     },
