@@ -45,7 +45,7 @@ export class ChatAgent {
       )
     }
     let context: AgentContext<S> = { ...input, chatId }
-    await options.onEvent?.({ type: 'authenticated', chatId }, context.signal)
+    await options.onAuthenticated?.(chatId)
 
     // if (!content.trim() || content.length > 16000) {
     //   throw new AgentError('Некорректное сообщение', 400)
@@ -81,7 +81,7 @@ export class ChatAgent {
     context = { ...context, signal: scope.signal }
     const write = async (content: string): Promise<void> => {
       context.signal.throwIfAborted()
-      await options.onEvent?.({ type: 'content', content }, context.signal)
+      await context.output?.write(content, context.signal)
     }
     let stage = 'save_user_message'
     let userSaved = false
@@ -209,7 +209,6 @@ export class ChatAgent {
                 publicError = providerError.message
                 throw new Error(publicError)
               }
-              await options.onEvent?.({ type: 'ready' }, context.signal)
               stage = stream ? 'provider_stream' : 'provider_json'
               let buffered = ''
               let plainText = false
@@ -250,11 +249,7 @@ export class ChatAgent {
           stage = 'execution'
           return result
         },
-        async (content) => {
-          await write(content)
-        },
       )
-      await options.onEvent?.({ type: 'ready' }, context.signal)
       if (!streamedAnswer) {
         await write(answer)
       }

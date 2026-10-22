@@ -54,17 +54,16 @@ export const setupChat = ({
           storage,
           pageUrl,
           signal: controller.signal,
+          output: delivery.output,
           endpoint: `http://127.0.0.1:${req.socket.localPort}/api`,
           receive: (message, context) =>
             chatMessages.receive(context.chatId, message, origin),
         })
         const result = await agent.run(req.body.message, token, context, {
           stream,
-          onEvent: async (event, signal) => {
-            if (event.type === 'authenticated') {
-              chatId = event.chatId
-            }
-            await delivery.event(event, signal)
+          onAuthenticated: (id) => {
+            chatId = id
+            delivery.start()
           },
           diagnostics: () => ({ headersSent: res.headersSent }),
         })

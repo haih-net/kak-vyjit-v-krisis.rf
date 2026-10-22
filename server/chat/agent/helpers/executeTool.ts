@@ -9,7 +9,6 @@ export async function executeTool<S extends AgentStorage>(
   call: ToolCall,
   message: StoredMessage,
   context: AgentContext<S>,
-  onContent: (content: string) => Promise<void>,
 ): Promise<string> {
   const { storage, chatId } = context
   await storage.append(chatId, {
@@ -41,7 +40,7 @@ export async function executeTool<S extends AgentStorage>(
     const tool = context.tools.prepare(call)
     if (context.config.toolExplanations) {
       const explanation = `\n\n${tool.reasoning.trim()}\n\n`
-      await onContent(explanation)
+      await context.output?.write(explanation, context.signal)
     }
     result = await tool.execute(context)
   } catch (error) {

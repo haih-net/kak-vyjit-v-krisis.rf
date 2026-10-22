@@ -1,3 +1,4 @@
+import type { AgentOutput } from './types'
 import type { Execution } from './execution'
 import { LlmClient } from '../../llm/client'
 import type { Message, StoredMessage } from '../storage'
@@ -28,6 +29,7 @@ export interface AgentContext<S extends AgentStorage = AgentStorage> {
   signal: AbortSignal
   client: Pick<LlmClient, 'endpoint' | 'complete'>
   config: AgentConfig
+  output?: AgentOutput
   execution?: Execution
   callAgent?: (
     message: string,

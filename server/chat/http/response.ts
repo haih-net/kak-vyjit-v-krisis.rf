@@ -2,10 +2,11 @@ import { once } from 'node:events'
 import type { Response } from 'express'
 import { chatErrorMessage } from '../../../app/Custom/components/Chat/lib/errors'
 import { AgentError } from '../agent/errors'
-import type { AgentEvent, AgentResult } from '../agent/types'
+import type { AgentOutput, AgentResult } from '../agent/types'
 
 export interface ChatResponse {
-  event: (event: AgentEvent, signal: AbortSignal) => Promise<void>
+  start: () => void
+  output: AgentOutput
   finish: (result: AgentResult) => Promise<void>
   fail: (error: unknown) => void
 }
@@ -25,20 +26,23 @@ export function createChatResponse(
     }
   }
   return {
-    event: async (event, runSignal) => {
-      if (!stream) {
-        return
-      }
-      if (event.type === 'ready' && !res.headersSent) {
+    start: () => {
+      if (stream && !res.headersSent) {
         res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
         res.setHeader('X-Accel-Buffering', 'no')
         res.flushHeaders()
-      } else if (event.type === 'content') {
-        await write(
-          JSON.stringify({ choices: [{ delta: { content: event.content } }] }),
-          runSignal,
-        )
       }
+    },
+    output: {
+      write: async (content, runSignal) => {
+        runSignal.throwIfAborted()
+        if (stream) {
+          await write(
+            JSON.stringify({ choices: [{ delta: { content } }] }),
+            runSignal,
+          )
+        }
+      },
     },
     finish: async (result) => {
       if (!stream) {

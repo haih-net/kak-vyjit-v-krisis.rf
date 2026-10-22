@@ -37,15 +37,16 @@ async function main(): Promise<void> {
       storage: chatStorage,
       endpoint: values.endpoint,
       signal: controller.signal,
+      output: {
+        write: async (content, signal) => {
+          signal.throwIfAborted()
+          process.stdout.write(content)
+        },
+      },
     })
     await new ChatAgent().run(message, token, context, {
-      onEvent: (event) => {
-        if (event.type === 'authenticated') {
-          console.error(`Dialogue: ${event.chatId}`)
-        }
-        if (event.type === 'content') {
-          process.stdout.write(event.content)
-        }
+      onAuthenticated: (chatId) => {
+        console.error(`Dialogue: ${chatId}`)
       },
     })
     process.stdout.write('\n')

@@ -69,7 +69,6 @@ export async function runAgent<S extends AgentStorage>(
     context: AgentContext<S>,
     input?: unknown,
   ) => Promise<{ content: string; calls: ToolCall[] }>,
-  onContent: (content: string) => Promise<void>,
   input?: unknown,
 ): Promise<string> {
   const execution = context.execution
@@ -88,7 +87,6 @@ export async function runAgent<S extends AgentStorage>(
           },
           message,
           infer,
-          onContent,
           data,
         ),
     }
@@ -162,7 +160,7 @@ export async function runAgent<S extends AgentStorage>(
             arguments: JSON.stringify(resolve(step.arguments)),
           },
         }
-        output = await executeTool(call, message, nestedContext, onContent)
+        output = await executeTool(call, message, nestedContext)
         try {
           previous = JSON.parse(output)
         } catch {

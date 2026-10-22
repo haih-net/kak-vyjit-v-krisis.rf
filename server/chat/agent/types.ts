@@ -1,9 +1,8 @@
 import type { TokenUsage } from '../storage'
 
-export type AgentEvent =
-  | { type: 'authenticated'; chatId: string }
-  | { type: 'ready' }
-  | { type: 'content'; content: string }
+export interface AgentOutput {
+  write: (content: string, signal: AbortSignal) => Promise<void>
+}
 
 export interface AgentResult {
   id: string
@@ -13,7 +12,8 @@ export interface AgentResult {
 }
 
 export interface AgentRunOptions {
+  /** Selects the LLM response mode; output delivery is provided by the context. */
   stream?: boolean
-  onEvent?: (event: AgentEvent, signal: AbortSignal) => void | Promise<void>
+  onAuthenticated?: (chatId: string) => void | Promise<void>
   diagnostics?: () => Record<string, unknown>
 }

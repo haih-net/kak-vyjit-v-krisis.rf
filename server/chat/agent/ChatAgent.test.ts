@@ -99,13 +99,13 @@ it('runs without HTTP and shares context and custom storage with nested tools', 
     await current.storage.append(current.chatId, message)
   }
   const events: string[] = []
+  runContext.output = {
+    write: async (content) => {
+      events.push(content)
+    },
+  }
   const result = await new ChatAgent().run('Start', 'test-token', runContext, {
     stream: false,
-    onEvent: (event) => {
-      if (event.type === 'content') {
-        events.push(event.content)
-      }
-    },
   })
   expect(result.content).toBe('{"value":"shared"}')
   expect(runContext.client.complete).toHaveBeenCalledTimes(1)
@@ -114,7 +114,9 @@ it('runs without HTTP and shares context and custom storage with nested tools', 
   expect(
     seen.every(
       (item) =>
-        item.storage === seen[0].storage && item.signal === seen[0].signal,
+        item.storage === seen[0].storage &&
+        item.signal === seen[0].signal &&
+        item.output === runContext.output,
     ),
   ).toBe(true)
   expect(seen[0].storage).toBe(storage)
