@@ -1,7 +1,7 @@
 import type * as React from 'react'
 import { Link } from 'react-router'
 import { GuideArticle } from '../../components/GuideArticle'
-import illustration from './assets/illustration.webp'
+import { illustration, illustrationSrcSet } from './assets/illustration'
 import { articleSections } from './sections'
 import type { ContentPageData } from '../interfaces'
 
@@ -12,6 +12,7 @@ export const partnerSalesPageData: ContentPageData = {
     'Предлагайте клиентам подходящие товары и услуги партнёров за вознаграждение. Договоритесь об учёте заказов, выплатах и ответственности за результат.',
   image: {
     src: illustration,
+    srcSet: illustrationSrcSet,
     alt: 'Продавец материалов знакомит покупательницу с мастером по установке.',
   },
 }
@@ -21,6 +22,7 @@ export const PartnerSalesPage: React.FC = () => (
     title={partnerSalesPageData.title}
     lead={partnerSalesPageData.description}
     illustration={partnerSalesPageData.image.src}
+    illustrationSrcSet={illustrationSrcSet}
     illustrationAlt={partnerSalesPageData.image.alt}
     sections={articleSections}
   >

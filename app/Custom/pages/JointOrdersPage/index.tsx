@@ -1,7 +1,7 @@
 import type * as React from 'react'
 import { Link } from 'react-router'
 import { GuideArticle } from '../../components/GuideArticle'
-import illustration from './assets/illustration.webp'
+import { illustration, illustrationSrcSet } from './assets/illustration'
 import { articleSections } from './sections'
 import type { ContentPageData } from '../interfaces'
 
@@ -12,6 +12,7 @@ export const jointOrdersPageData: ContentPageData = {
     'Объедините свои навыки и ресурсы с возможностями партнёров. Распределите работу и оплату, выполните совместный заказ и предложите клиенту нужное продолжение.',
   image: {
     src: illustration,
+    srcSet: illustrationSrcSet,
     alt: 'Столяр, установщик и доставщик вместе выполняют заказ на мебель.',
   },
 }
@@ -21,6 +22,7 @@ export const JointOrdersPage: React.FC = () => (
     title={jointOrdersPageData.title}
     lead={jointOrdersPageData.description}
     illustration={jointOrdersPageData.image.src}
+    illustrationSrcSet={illustrationSrcSet}
     illustrationAlt={jointOrdersPageData.image.alt}
     sections={articleSections}
   >

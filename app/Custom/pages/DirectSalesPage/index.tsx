@@ -1,7 +1,7 @@
 import type * as React from 'react'
 import { Link } from 'react-router'
 import { GuideArticle } from '../../components/GuideArticle'
-import illustration from './assets/illustration.webp'
+import { illustration, illustrationSrcSet } from './assets/illustration'
 import { articleSections } from './sections'
 import type { ContentPageData } from '../interfaces'
 
@@ -12,6 +12,7 @@ export const directSalesPageData: ContentPageData = {
     'Развивайте прямые продажи через свой сайт, рекомендации и повторные заказы. Сравните расходы на привлечение и обслуживание клиентов с комиссией площадок.',
   image: {
     src: illustration,
+    srcSet: illustrationSrcSet,
     alt: 'Керамист принимает прямой заказ и упаковывает чашку рядом со своим каталогом.',
   },
 }
@@ -21,6 +22,7 @@ export const DirectSalesPage: React.FC = () => (
     title={directSalesPageData.title}
     lead={directSalesPageData.description}
     illustration={directSalesPageData.image.src}
+    illustrationSrcSet={illustrationSrcSet}
     illustrationAlt={directSalesPageData.image.alt}
     sections={articleSections}
   >

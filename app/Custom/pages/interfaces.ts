@@ -4,6 +4,7 @@ export interface ContentPageData {
   readonly description: string
   readonly image: {
     readonly src: string
+    readonly srcSet: string
     readonly alt: string
   }
 }

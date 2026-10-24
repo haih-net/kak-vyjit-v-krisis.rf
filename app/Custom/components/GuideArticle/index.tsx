@@ -8,6 +8,7 @@ interface GuideArticleProps extends React.PropsWithChildren {
   title: string
   lead: string
   illustration: string
+  illustrationSrcSet: string
   illustrationAlt: string
   sections: readonly PageSection[]
 }
@@ -17,6 +18,7 @@ export const GuideArticle: React.FC<GuideArticleProps> = ({
   lead,
   illustration,
   illustrationAlt,
+  illustrationSrcSet,
   sections,
   children,
 }) => {
@@ -40,6 +42,8 @@ export const GuideArticle: React.FC<GuideArticleProps> = ({
           </div>
           <img
             src={illustration}
+            srcSet={illustrationSrcSet}
+            sizes="(min-width: 1680px) 672px, (min-width: 1200px) calc((100vw - 336px) / 2), (min-width: 800px) calc(45vw - 20px), calc(100vw - 2 * clamp(20px, 5vw, 80px))"
             alt={illustrationAlt}
             width={1536}
             height={1024}

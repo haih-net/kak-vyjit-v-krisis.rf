@@ -1,7 +1,7 @@
 import type { MetaFunction } from 'react-router'
 import { createSeoMeta, unavailableSeoMeta } from '../components/seo/SeoHeaders'
 import type { SeoHandle } from '../components/seo/SeoHeaders'
-import workshop from '../Custom/pages/MainPage/View/Hero/assets/workshop.png'
+import { workshop } from '../Custom/pages/MainPage/View/Hero/assets/workshop'
 import { MainPage } from 'app/Custom/pages/MainPage'
 
 export const handle = {

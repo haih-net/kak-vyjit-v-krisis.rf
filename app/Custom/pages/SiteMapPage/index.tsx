@@ -68,6 +68,8 @@ export const SiteMapPage: React.FC = () => (
                         <article className="page-summary">
                           <img
                             src={page.image.src}
+                            srcSet={page.image.srcSet}
+                            sizes="(min-width: 800px) 200px, 260px"
                             alt={page.image.alt}
                             width={1536}
                             height={1024}

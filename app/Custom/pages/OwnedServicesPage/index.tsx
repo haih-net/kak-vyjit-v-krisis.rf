@@ -1,7 +1,7 @@
 import type * as React from 'react'
 import { Link } from 'react-router'
 import { GuideArticle } from '../../components/GuideArticle'
-import illustration from './assets/illustration.webp'
+import { illustration, illustrationSrcSet } from './assets/illustration'
 import { articleSections } from './sections'
 import type { ContentPageData } from '../interfaces'
 
@@ -12,6 +12,7 @@ export const ownedServicesPageData: ContentPageData = {
     'Сравните стоимость подписок на CRM, запись клиентов и другие сервисы с собственным решением. Учтите перенос данных, размещение и постоянное обслуживание.',
   image: {
     src: illustration,
+    srcSet: illustrationSrcSet,
     alt: 'Владелица студии со специалистом настраивают простой учёт обращений.',
   },
 }
@@ -21,6 +22,7 @@ export const OwnedServicesPage: React.FC = () => (
     title={ownedServicesPageData.title}
     lead={ownedServicesPageData.description}
     illustration={ownedServicesPageData.image.src}
+    illustrationSrcSet={illustrationSrcSet}
     illustrationAlt={ownedServicesPageData.image.alt}
     sections={articleSections}
   >

@@ -1,7 +1,7 @@
 import type * as React from 'react'
 import { Link } from 'react-router'
 import { GuideArticle } from '../../components/GuideArticle'
-import illustration from './assets/illustration.webp'
+import { illustration, illustrationSrcSet } from './assets/illustration'
 import { articleSections } from './sections'
 import type { ContentPageData } from '../interfaces'
 
@@ -12,6 +12,7 @@ export const pastCostsPageData: ContentPageData = {
     'Решите, стоит ли продолжать вложения в проект: сравните будущие расходы и результат, оцените стоимость выхода и то, что вы сможете использовать дальше.',
   image: {
     src: illustration,
+    srcSet: illustrationSrcSet,
     alt: 'Фотограф собирает оборудование для работы вне прежней студии.',
   },
 }
@@ -21,6 +22,7 @@ export const PastCostsPage: React.FC = () => (
     title={pastCostsPageData.title}
     lead={pastCostsPageData.description}
     illustration={pastCostsPageData.image.src}
+    illustrationSrcSet={illustrationSrcSet}
     illustrationAlt={pastCostsPageData.image.alt}
     sections={articleSections}
   >

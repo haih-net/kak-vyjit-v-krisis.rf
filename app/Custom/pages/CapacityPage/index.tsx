@@ -1,7 +1,7 @@
 import type * as React from 'react'
 import { Link } from 'react-router'
 import { GuideArticle } from '../../components/GuideArticle'
-import illustration from './assets/illustration.webp'
+import { illustration, illustrationSrcSet } from './assets/illustration'
 import { articleSections } from './sections'
 import type { ContentPageData } from '../interfaces'
 
@@ -12,6 +12,7 @@ export const capacityPageData: ContentPageData = {
     'Используйте свободное оборудование, транспорт, помещение или рабочее время для новых заказов. Посчитайте расходы и проверьте, не пострадает основная работа.',
   image: {
     src: illustration,
+    srcSet: illustrationSrcSet,
     alt: 'Фотограф готовит съёмку в студии, предоставленной другим специалистом.',
   },
 }
@@ -21,6 +22,7 @@ export const CapacityPage: React.FC = () => (
     title={capacityPageData.title}
     lead={capacityPageData.description}
     illustration={capacityPageData.image.src}
+    illustrationSrcSet={illustrationSrcSet}
     illustrationAlt={capacityPageData.image.alt}
     sections={articleSections}
   >

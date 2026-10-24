@@ -1,6 +1,6 @@
 import type * as React from 'react'
 import { Link } from 'react-router'
-import workshop from './assets/workshop.png'
+import { workshop, workshopSrcSet } from './assets/workshop'
 import { HeroStyled } from './styles'
 
 export const Hero: React.FC = () => (
@@ -17,6 +17,8 @@ export const Hero: React.FC = () => (
     <img
       className="hero-illustration"
       src={workshop}
+      srcSet={workshopSrcSet}
+      sizes="(min-width: 1680px) 747px, (min-width: 1200px) calc((100vw - 316px) * 1.15 / 2.1), (min-width: 800px) calc((90vw - 20px) * 1.15 / 2.1), calc(100vw - 2 * clamp(20px, 5vw, 80px))"
       width={1536}
       height={1024}
       fetchPriority="high"

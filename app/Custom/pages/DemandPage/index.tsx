@@ -1,7 +1,7 @@
 import type * as React from 'react'
 import { Link } from 'react-router'
 import { GuideArticle } from '../../components/GuideArticle'
-import illustration from './assets/illustration.webp'
+import { illustration, illustrationSrcSet } from './assets/illustration'
 import { articleSections } from './sections'
 import type { ContentPageData } from '../interfaces'
 
@@ -12,6 +12,7 @@ export const demandPageData: ContentPageData = {
     'Найдите новый спрос на ваши навыки и услуги: изучите задачи клиентов, составьте предложение и проверьте его на первых заказах до крупных вложений.',
   image: {
     src: illustration,
+    srcSet: illustrationSrcSet,
     alt: 'Служба доставки воздушных шаров принимает обычные товары местного магазина.',
   },
 }
@@ -21,6 +22,7 @@ export const DemandPage: React.FC = () => (
     title={demandPageData.title}
     lead={demandPageData.description}
     illustration={demandPageData.image.src}
+    illustrationSrcSet={illustrationSrcSet}
     illustrationAlt={demandPageData.image.alt}
     sections={articleSections}
   >

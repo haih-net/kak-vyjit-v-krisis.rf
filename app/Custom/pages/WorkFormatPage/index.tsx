@@ -1,7 +1,7 @@
 import type * as React from 'react'
 import { Link } from 'react-router'
 import { GuideArticle } from '../../components/GuideArticle'
-import illustration from './assets/illustration.webp'
+import { illustration, illustrationSrcSet } from './assets/illustration'
 import { articleSections } from './sections'
 import type { ContentPageData } from '../interfaces'
 
@@ -12,6 +12,7 @@ export const workFormatPageData: ContentPageData = {
     'Сравните наёмную работу, фриланс и бизнес по доходу, расходам и условиям жизни. Проверьте спрос на свой опыт и рассчитайте бюджет переходного периода.',
   image: {
     src: illustration,
+    srcSet: illustrationSrcSet,
     alt: 'Специалист обсуждает свой опыт и условия работы на собеседовании.',
   },
 }
@@ -21,6 +22,7 @@ export const WorkFormatPage: React.FC = () => (
     title={workFormatPageData.title}
     lead={workFormatPageData.description}
     illustration={workFormatPageData.image.src}
+    illustrationSrcSet={illustrationSrcSet}
     illustrationAlt={workFormatPageData.image.alt}
     sections={articleSections}
   >
