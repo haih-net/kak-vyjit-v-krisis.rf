@@ -2,109 +2,51 @@ import { styled } from '@linaria/react'
 import { theme } from '../../theme'
 
 export const HeaderStyled = styled.header`
-  position: sticky;
+  position: relative;
   top: 0;
   z-index: 300;
   background: ${theme.backgrounds.page};
-  border-bottom: 1px solid ${theme.colors.border};
+  border-bottom: 0;
   .header-inner {
-    max-width: 1328px;
+    max-width: ${theme.layout.maxWidth};
     margin: auto;
     min-height: 80px;
-    padding: 16px;
+    padding: 18px ${theme.layout.gutter};
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    flex-direction: column;
     justify-content: space-between;
     gap: 12px;
 
     @media (min-width: ${theme.breakpoints.xs}px) {
-      padding: 16px 24px;
-      gap: 32px;
-    }
-
-    @media (min-width: ${theme.breakpoints.sm}px) {
-      min-height: 96px;
-      padding: 18px 40px;
-    }
-  }
-  nav {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    padding: 20px 24px 28px;
-    background: ${theme.backgrounds.page};
-    box-shadow: 0 16px 24px #182e2012;
-    border-bottom: 1px solid ${theme.colors.border};
-    align-items: stretch;
-    gap: 6px;
-    font-size: 14px;
-
-    @media (min-width: ${theme.breakpoints.sm}px) {
-      display: flex;
-      position: static;
-      padding: 0;
-      background: transparent;
-      box-shadow: none;
-      border-bottom: 0;
-      align-items: center;
+      padding: 18px ${theme.layout.gutter};
       gap: 20px;
     }
 
-    @media (min-width: ${theme.breakpoints.md}px) {
-      gap: 32px;
-    }
-  }
-  nav[data-open='true'] {
-    display: flex;
-    flex-direction: column;
-
-    @media (min-width: ${theme.breakpoints.sm}px) {
+    @media (min-width: ${theme.breakpoints.lg}px) {
       flex-direction: row;
+      align-items: center;
+      min-height: 96px;
+      padding: 24px ${theme.layout.gutter};
     }
   }
-  nav a {
-    padding: 12px 0;
-
-    @media (min-width: ${theme.breakpoints.sm}px) {
-      padding: 10px 0;
-    }
+  .site-brand {
+    font-size: clamp(17px, 2vw, 25px);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    overflow-wrap: anywhere;
+    max-width: calc(100% - 56px);
   }
-  nav a[aria-current='page'] {
-    text-decoration: underline;
-    text-underline-offset: 6px;
+  nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 14px;
   }
   .ai-button {
-    margin-top: 10px;
-    justify-content: center;
-
-    @media (min-width: ${theme.breakpoints.sm}px) {
-      margin-top: 0;
-      margin-left: 0;
-      justify-content: flex-start;
-    }
-
-    @media (min-width: ${theme.breakpoints.md}px) {
-      margin-left: 32px;
-    }
+    margin: 0;
   }
-  .menu-toggle {
-    display: flex;
-    background: transparent;
-    border: 1px solid ${theme.colors.border};
-    border-radius: 10px;
-    width: 44px;
-    height: 44px;
-    align-items: center;
-    justify-content: center;
-    color: inherit;
-
-    @media (min-width: ${theme.breakpoints.sm}px) {
-      display: none;
-    }
-  }
-
   .feedback-button,
   .signin-link {
     display: inline-flex;
@@ -123,7 +65,7 @@ export const HeaderStyled = styled.header`
   }
   .feedback-button:hover,
   .signin-link:hover {
-    background: #eef1e9;
+    background: #f0f4f7;
   }
   .account-menu {
     position: relative;
@@ -144,11 +86,10 @@ export const HeaderStyled = styled.header`
   }
   .account-menu summary:hover,
   .account-menu[open] summary {
-    background: #eef1e9;
+    background: #f0f4f7;
   }
   .account-menu summary:focus-visible {
-    outline: 2px solid ${theme.colors.primary};
-    outline-offset: 3px;
+    outline: none;
   }
   .account-avatar {
     width: 32px;
@@ -156,7 +97,7 @@ export const HeaderStyled = styled.header`
     display: grid;
     place-items: center;
     border-radius: 50%;
-    background: #e4eadf;
+    background: #e8eef3;
     flex-shrink: 0;
   }
   .account-name {
@@ -171,9 +112,9 @@ export const HeaderStyled = styled.header`
     border: 1px solid ${theme.colors.border};
     border-radius: 12px;
     background: white;
-    box-shadow: 0 12px 32px #1d30251a;
+    box-shadow: 0 12px 32px #262c351a;
     min-width: 220px;
-    @media (min-width: ${theme.breakpoints.sm}px) {
+    @media (min-width: ${theme.breakpoints.lg}px) {
       position: absolute;
       right: 0;
       top: 100%;
@@ -197,7 +138,7 @@ export const HeaderStyled = styled.header`
     color: ${theme.colors.text.primary};
   }
   .account-dropdown a:hover {
-    background: #eef1e9;
+    background: #f0f4f7;
   }
   .account-dropdown button {
     margin-top: 4px;

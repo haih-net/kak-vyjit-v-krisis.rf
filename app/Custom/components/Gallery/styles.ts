@@ -42,8 +42,7 @@ export const ConceptGalleryStyled = styled.section`
   }
   button:focus-visible,
   .gallery-viewport:focus-visible {
-    outline: 3px solid #1676ce;
-    outline-offset: 3px;
+    outline: none;
   }
   .gallery-stage {
     position: relative;

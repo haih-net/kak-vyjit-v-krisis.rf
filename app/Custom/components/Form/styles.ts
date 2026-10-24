@@ -23,8 +23,7 @@ export const FormStyled = styled.form`
     margin-bottom: 8px;
     min-height: 46px;
     &:focus-visible {
-      outline: 2px solid #8eae9b;
-      outline-offset: 2px;
+      outline: none;
     }
     &:disabled {
       background: #f2f3ef;

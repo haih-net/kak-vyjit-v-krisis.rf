@@ -33,8 +33,7 @@ export const AdminPageStyled = styled.section`
     border-color: ${theme.colors.primary};
   }
   .section-card:focus-visible {
-    outline: 2px solid ${theme.colors.primary};
-    outline-offset: 4px;
+    outline: none;
   }
   .section-card strong {
     display: block;

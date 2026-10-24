@@ -53,8 +53,7 @@ export const SignInRegistrationStyled = styled.div`
     }
 
     &:focus-visible {
-      outline: 3px solid #8eae9b;
-      outline-offset: 3px;
+      outline: none;
     }
   }
 `

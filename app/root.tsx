@@ -40,10 +40,6 @@ export function Layout({ children }: { children: ReactNode }) {
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
         <SeoHeaders />
         <Links />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap"
-          rel="stylesheet"
-        />
         {betterlyticsId && (
           <script
             async

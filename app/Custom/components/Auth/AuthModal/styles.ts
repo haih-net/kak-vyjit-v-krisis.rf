@@ -15,9 +15,10 @@ export const AuthModalLink = styled.button`
   cursor: pointer;
   font-size: inherit;
   padding: 0;
-  text-decoration: underline;
+  text-decoration: none;
 
   &:hover {
+    text-decoration: underline;
     opacity: 0.8;
   }
 `

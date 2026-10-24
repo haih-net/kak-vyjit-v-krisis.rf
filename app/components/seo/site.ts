@@ -1,8 +1,9 @@
 export const site = {
-  origin: 'http://localhost:3000',
-  name: '',
+  origin: 'https://xn------5cdlb0alfdbnbh4gtai3nwa.xn--p1ai',
+  name: 'Как выжить в кризис',
   language: 'ru',
-  description: '',
+  description:
+    'Как выжить в кризис: снизить нагрузку, найти новые источники дохода и использовать свои возможности.',
 }
 
 // Preserve the identity published at https://fi1osof.ru/about.

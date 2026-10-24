@@ -85,11 +85,12 @@ export const markdownStyles = `
   /* Links */
   a {
     color: inherit;
-    text-decoration: underline;
+    text-decoration: none;
     text-underline-offset: 0.15em;
   }
 
   a:hover {
+    text-decoration: underline;
     text-decoration-thickness: 0.12em;
   }
 

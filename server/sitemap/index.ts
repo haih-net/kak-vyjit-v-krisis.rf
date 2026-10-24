@@ -1,3 +1,4 @@
+import { guidePaths } from '../../app/guidePaths'
 import type { Express, Request, Response } from 'express'
 import { db } from '../database'
 
@@ -50,7 +51,15 @@ async function generateSitemap(req: Request, res: Response): Promise<void> {
     )
     .whereNot('visibility', 'unpublished')
     .orderBy('updatedAt', 'desc')
-  const xml = generateUrls([{ uri: '/' }, ...concepts], origin)
+  const xml = generateUrls(
+    [
+      { uri: '/' },
+      { uri: '/karta-saita' },
+      ...guidePaths.map((uri) => ({ uri })),
+      ...concepts,
+    ],
+    origin,
+  )
   res.set('Cache-Control', 'no-store').type('application/xml').send(xml)
 }
 

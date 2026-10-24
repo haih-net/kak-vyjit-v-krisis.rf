@@ -1,83 +1,32 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type * as React from 'react'
 import { Link, useLocation } from 'react-router'
 import { useOpenChatWithMessage } from '../../components/Chat/hooks/useOpenChatWithMessage'
 import { HeaderStyled } from './styles'
 import { SignOutButton } from '../../components/Auth/SignOutButton'
-import { theme } from '../../theme'
 import { useAppContext } from '../../hooks/useAppContext'
 
 export const Header: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false)
-  const toggle = useRef<HTMLButtonElement>(null)
   const accountMenu = useRef<HTMLDetailsElement>(null)
-  const header = useRef<HTMLElement>(null)
   const location = useLocation()
   const { user, userLoading, openFeedback } = useAppContext()
 
   const handleFeedback = useCallback(() => {
     openFeedback()
-    setIsOpen(false)
   }, [openFeedback])
   const openChat = useOpenChatWithMessage()
   const handleOpenChat = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       openChat(event)
-      setIsOpen(false)
     },
     [openChat],
   )
 
   const closeMenu = useCallback(() => {
-    setIsOpen(false)
     if (accountMenu.current) {
       accountMenu.current.open = false
     }
   }, [])
-  const toggleMenu = useCallback(() => setIsOpen((previous) => !previous), [])
-  const handleBlur = useCallback((event: React.FocusEvent<HTMLElement>) => {
-    if (
-      !event.currentTarget.contains(event.relatedTarget) &&
-      event.relatedTarget !== toggle.current
-    ) {
-      setIsOpen(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!isOpen) {
-      return
-    }
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsOpen(false)
-        toggle.current?.focus()
-      }
-    }
-    const onPointer = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        !header.current?.contains(event.target)
-      ) {
-        setIsOpen(false)
-      }
-    }
-    const media = window.matchMedia(`(min-width: ${theme.breakpoints.sm}px)`)
-    const onResize = () => {
-      if (media.matches) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('keydown', onKey)
-    document.addEventListener('pointerdown', onPointer)
-    media.addEventListener('change', onResize)
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.removeEventListener('pointerdown', onPointer)
-      media.removeEventListener('change', onResize)
-    }
-  }, [isOpen])
-
   useEffect(() => {
     const closeAccount = (event: PointerEvent): void => {
       if (
@@ -102,42 +51,15 @@ export const Header: React.FC = () => {
     }
   }, [])
 
+  const showSignin = false
+
   return (
-    <HeaderStyled ref={header}>
+    <HeaderStyled>
       <div className="header-inner">
-        <div>
-          <Link to={'/'}>Главная</Link>
-        </div>
-        <button
-          ref={toggle}
-          type="button"
-          className="menu-toggle"
-          aria-label={isOpen ? 'Закрыть меню' : 'Открыть меню'}
-          aria-expanded={isOpen}
-          aria-controls="main-navigation"
-          onClick={toggleMenu}
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <path
-              d={isOpen ? 'M18 6 6 18M6 6l12 12' : 'M4 6h16M4 12h16M4 18h16'}
-            />
-          </svg>
-        </button>
-        <nav
-          id="main-navigation"
-          aria-label="Основная навигация"
-          data-open={isOpen}
-          onBlur={handleBlur}
-        >
+        <Link className="site-brand" to="/">
+          Как выжить в кризис
+        </Link>
+        <nav aria-label="Действия сайта">
           {/* <Link
             to="/users"
             onClick={closeMenu}
@@ -154,11 +76,7 @@ export const Header: React.FC = () => {
           >
             Написать
           </button>
-          {location.pathname === '/ai' ? (
-            <Link to="/ai" className="ai-button" onClick={closeMenu}>
-              Спросить ИИ <span aria-hidden="true">↗</span>
-            </Link>
-          ) : (
+          {location.pathname === '/ai' ? null : (
             <button
               type="button"
               className="ai-button"
@@ -202,9 +120,11 @@ export const Header: React.FC = () => {
                 </div>
               </details>
             ) : (
-              <Link className="signin-link" to="/signin" onClick={closeMenu}>
-                Войти
-              </Link>
+              showSignin && (
+                <Link className="signin-link" to="/signin" onClick={closeMenu}>
+                  Войти
+                </Link>
+              )
             ))}
         </nav>
       </div>

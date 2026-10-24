@@ -64,8 +64,7 @@ export const ButtonStyled = styled.button`
     font-size: 13px;
   }
   &:focus-visible {
-    outline: 3px solid #8eae9b;
-    outline-offset: 3px;
+    outline: none;
   }
   &:disabled {
     opacity: 0.55;

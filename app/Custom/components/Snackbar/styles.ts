@@ -49,7 +49,6 @@ export const SnackbarMessageStyled = styled.div`
     cursor: pointer;
   }
   button:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 3px;
+    outline: none;
   }
 `
